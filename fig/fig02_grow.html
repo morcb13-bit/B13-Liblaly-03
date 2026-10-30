@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>円環を外へつなぐ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 三層25環から、五芒星になりかけの所を円環5個で囲む規則と、大きなひし形の欠けた頂点を埋める規則で60環まで育てる */
+:root{
+  --bg:#efede6; --panel:#f8f7f2; --ink:#1e2724; --muted:#5d6660; --rule:#cfcabd;
+  --c0:#e0b030; --c1:#1f5fa8; --c2:#b0452a; --c3:#3d7d4f; --c4:#ffffff; --edge:#39443f; --hl:#1e2724; --rh:#7a3fa0; --miss:#c0392b;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;padding-block:16px 28px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0}
+canvas{width:100%;max-width:560px;aspect-ratio:1/1;height:auto;justify-self:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.kv b{font-family:var(--mono);font-weight:600;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+label{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.35rem,4vw,1.8rem);margin:0;letter-spacing:.02em}
+p{margin:0;line-height:1.75;color:var(--ink)}
+.note{font-size:.85rem;color:var(--muted);line-height:1.65}
+code{font-family:var(--mono);font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>円環を外へつなぐ</h1>
+  <div class="box">
+    <canvas id="cv" width="1000" height="1000" aria-label="円環を25個から60個まで育てる図"></canvas>
+    <div class="controls">
+      <button id="play">停止</button>
+      <button id="step">一歩</button>
+      <button id="reset">はじめから</button>
+      <label>速さ <input id="speed" type="range" min="1" max="8" value="3"></label>
+    </div>
+    <div class="kv">
+      <div><span>段階</span><b id="stage">—</b></div>
+      <div><span>円環</span><b id="nr">0</b></div>
+      <div><span>五角形</span><b id="nc">0</b></div>
+      <div><span>五芒星</span><b id="ns">0</b></div>
+      <div><span>大きなひし形（そろった／全部）</span><b id="nrh">—</b></div>
+    </div>
+  </div>
+  <p>はじめの 25 個の円環は、第1章の2種類のつなぎ方（連続と2つ飛ばし）だけで手で組んだ三層です。ここから先は、二つの規則だけで円環を足します。</p>
+  <p><b>規則1</b>：五角形が置かれていない点のまわり、距離 φ の5方向（72° おき）のうち3枚以上に五角形がそろっていたら、そこは五芒星になりかけの点です。その点から距離 φ³ の5方向に円環5個を置きます。5個が重ならず向きも合うときだけ、まとめて置きます。1回目で 20 個、2回目で 10 個が入り、55 環・五芒星 21 個で止まります。</p>
+  <p><b>規則2</b>：円環の中心どうしを連続のつなぎ方で結ぶと、2つ飛ばしでつながる2個を短い対角線とする大きなひし形が 10 個できます。55 環では 5 個のひし形に頂点が一つずつ欠けています（赤い点）。欠けた頂点はどれも一つに決まり、そこに円環を置くと 60 環になって、10 個のひし形がすべてそろいます。</p>
+  <p class="note">円環の位置は本文の検算スクリプト（ch02_grow.py）が出したものをそのまま使い、五角形・五芒星・ひし形の数は図の中で整数だけで数え直しています。画面の座標に直す最後の一回だけ、観察者側の表示として実数を使っています。</p>
+</div>
+<script>
+const DATA={"groups":[["\u306f\u3058\u3081\u306e\u4e09\u5c64\uff08\u624b\u3067\u7d44\u3080\uff09",[[3,0,2,-2],[0,2,1,2],[-3,1,-1,3],[-2,-1,-2,0],[2,-2,0,-3],[7,-1,4,-5],[6,1,4,-3],[1,4,3,3],[-1,4,2,5],[-6,3,-2,7],[-7,2,-3,6],[-5,-2,-4,1],[-3,-3,-4,-1],[3,-4,-1,-6],[5,-4,1,-7],[5,3,5,0],[-5,5,0,8],[-8,0,-5,5],[0,-5,-3,-5],[8,-3,3,-8],[10,0,6,-6],[0,6,4,6],[-10,4,-4,10],[-6,-4,-6,0],[6,-6,0,-10]]],["\u898f\u5247 1 \u56de\u76ee",[[13,-2,7,-10],[12,-4,5,-11],[11,2,8,-5],[8,4,7,-1],[6,5,7,1],[3,7,6,5],[-3,8,3,10],[-6,7,1,11],[-8,7,-1,12],[-11,6,-3,13],[-13,3,-6,11],[-12,1,-7,8],[-11,-1,-7,6],[-10,-3,-8,3],[-5,-6,-7,-3],[-1,-7,-5,-6],[1,-7,-4,-8],[5,-8,-2,-11],[11,-5,4,-12],[10,-7,2,-13]]],["\u898f\u5247 2 \u56de\u76ee",[[15,1,10,-8],[16,-1,9,-11],[2,9,7,8],[-2,10,5,11],[-15,7,-5,16],[-16,5,-7,15],[-11,-5,-10,2],[-8,-7,-9,-2],[8,-10,-1,-15],[11,-9,1,-16]]],["\u3072\u3057\u5f62\u306e\u6b20\u3051\u305f\u9802\u70b9",[[-15,0,-9,9],[-9,9,0,15],[0,-9,-6,-9],[9,6,9,0],[15,-6,6,-15]]]],"rhombi":[[[6,1,4,-3],[7,-1,4,-5],[[10,0,6,-6],[3,0,2,-2]]],[[-1,4,2,5],[1,4,3,3],[[0,6,4,6],[0,2,1,2]]],[[-7,2,-3,6],[-6,3,-2,7],[[-10,4,-4,10],[-3,1,-1,3]]],[[-5,-2,-4,1],[-3,-3,-4,-1],[[-6,-4,-6,0],[-2,-1,-2,0]]],[[3,-4,-1,-6],[5,-4,1,-7],[[6,-6,0,-10],[2,-2,0,-3]]],[[6,5,7,1],[8,4,7,-1],[[5,3,5,0],[9,6,9,0]]],[[-8,7,-1,12],[-6,7,1,11],[[-5,5,0,8],[-9,9,0,15]]],[[-12,1,-7,8],[-11,-1,-7,6],[[-8,0,-5,5],[-15,0,-9,9]]],[[-1,-7,-5,-6],[1,-7,-4,-8],[[0,-5,-3,-5],[0,-9,-6,-9]]],[[11,-5,4,-12],[12,-4,5,-11],[[8,-3,3,-8],[15,-6,6,-15]]]]};
+// ── 整数だけの道具 ──
+const add=(a,b)=>a.map((x,i)=>x+b[i]), sub=(a,b)=>a.map((x,i)=>x-b[i]);
+function turn(a,k){let v=a.slice();k=((k%10)+10)%10;for(let i=0;i<k;i++){const[c0,c1,c2,c3]=v;v=[-c3,c0+c3,c1-c3,c2+c3];}return v;}
+const PHI=[1,0,1,-1], PHI2=[2,0,1,-1], key=a=>a.join(",");
+function cellsOf(rings){const m=new Map();for(const c of rings)for(let k=0;k<10;k++){const p=add(c,turn(PHI2,k));if(!m.has(key(p)))m.set(key(p),{p,a:k});}return m;}
+function stars(cells){const out=new Map();for(const v of cells.values())for(let j=0;j<10;j++){const g=sub(v.p,turn(PHI,j)),kg=key(g);if(cells.has(kg)||out.has(kg))continue;let ok=true;for(let i=0;i<5;i++)if(!cells.has(key(add(g,turn(PHI,j%2+2*i))))){ok=false;break;}if(ok)out.set(kg,g);}return out;}
+// 段階の並び：はじめ25、規則で5個ずつ、ひし形を見せる、欠けた頂点を埋める
+const FR=[];let acc=[];
+const G=DATA.groups;
+acc=acc.concat(G[0][1]);FR.push({name:G[0][0],rings:acc.slice(),rh:false});
+for(let g=1;g<G.length-1;g++)for(let i=0;i<G[g][1].length;i+=5){acc=acc.concat(G[g][1].slice(i,i+5));FR.push({name:G[g][0],rings:acc.slice(),rh:false});}
+FR.push({name:"大きなひし形を見る",rings:acc.slice(),rh:true});
+acc=acc.concat(G[G.length-1][1]);FR.push({name:G[G.length-1][0]+"を埋める",rings:acc.slice(),rh:true});
+FR.forEach(f=>{f.cells=cellsOf(f.rings);f.stars=stars(f.cells);const S=new Set(f.rings.map(key));f.done=DATA.rhombi.filter(r=>r[2].every(t=>S.has(key(t)))).length;f.S=S;});
+
+// ── 観察者側の表示（ここだけ実数） ──
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+const Z=[...Array(10)].map((_,k)=>[Math.cos(Math.PI*k/5),Math.sin(Math.PI*k/5)]);
+const xy=a=>[a[0]+a[1]*Z[1][0]+a[2]*Z[2][0]+a[3]*Z[3][0], a[1]*Z[1][1]+a[2]*Z[2][1]+a[3]*Z[3][1]];
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function draw(n){
+  const f=FR[n],W=cv.width,S=W/52,cx=W/2,cy=W/2,P=a=>{const c=xy(a);return[cx+c[0]*S,cy-c[1]*S];};
+  ctx.clearRect(0,0,W,W);
+  const prev=n>0?FR[n-1].S:new Set();
+  for(const v of f.cells.values()){const c=xy(v.p);ctx.beginPath();for(let i=0;i<5;i++){const z=Z[(v.a+2*i)%10];const X=cx+(c[0]+z[0])*S,Y=cy-(c[1]+z[1])*S;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}ctx.closePath();
+    ctx.globalAlpha=f.rh?0.35:1;ctx.fillStyle=css("--c"+(v.a%5));ctx.fill();ctx.lineWidth=1.2;ctx.strokeStyle=css("--edge");ctx.stroke();ctx.globalAlpha=1;}
+  for(const r of f.rings)if(!prev.has(key(r))&&n>0&&!f.rh){const[X,Y]=P(r);ctx.beginPath();ctx.arc(X,Y,S*3.75,0,7);ctx.lineWidth=4;ctx.strokeStyle=css("--hl");ctx.stroke();}
+  if(f.rh){
+    for(const r of DATA.rhombi){const[a,b,t]=r;const pts=[a,t[0],b,t[1]].map(P);ctx.beginPath();pts.forEach((p,i)=>i?ctx.lineTo(...p):ctx.moveTo(...p));ctx.closePath();
+      const ok=t.every(x=>f.S.has(key(x)));ctx.lineWidth=5;ctx.strokeStyle=ok?css("--rh"):css("--miss");ctx.stroke();
+      ctx.beginPath();ctx.moveTo(...P(a));ctx.lineTo(...P(b));ctx.setLineDash([8,6]);ctx.lineWidth=3;ctx.stroke();ctx.setLineDash([]);
+      for(const x of t)if(!f.S.has(key(x))){const[X,Y]=P(x);ctx.beginPath();ctx.arc(X,Y,13,0,7);ctx.fillStyle=css("--miss");ctx.fill();}}
+    for(const r of f.rings){const[X,Y]=P(r);ctx.beginPath();ctx.arc(X,Y,6,0,7);ctx.fillStyle=css("--ink");ctx.fill();}
+  }
+  for(const g of f.stars.values()){const[X,Y]=P(g);ctx.beginPath();ctx.arc(X,Y,5,0,7);ctx.fillStyle=css("--hl");ctx.fill();}
+  document.getElementById("stage").textContent=f.name;
+  document.getElementById("nr").textContent=f.rings.length;
+  document.getElementById("nc").textContent=f.cells.size;
+  document.getElementById("ns").textContent=f.stars.size;
+  document.getElementById("nrh").textContent=f.rh?f.done+" / "+DATA.rhombi.length:"—";
+}
+let n=0,playing=true,accT=0,prev=0;
+const speed=document.getElementById("speed"),btn=document.getElementById("play");
+function step(){n=(n+1)%FR.length;draw(n);}
+function loop(t){if(playing){accT+=(t-prev)*speed.value;if(accT>5000){accT=0;step();}}prev=t;requestAnimationFrame(loop);}
+btn.onclick=()=>{playing=!playing;btn.textContent=playing?"停止":"再生";};
+document.getElementById("step").onclick=()=>{playing=false;btn.textContent="再生";step();};
+document.getElementById("reset").onclick=()=>{n=0;draw(n);};
+draw(n);requestAnimationFrame(t=>{prev=t;loop(t);});
+</script>
+</body>
+</html>
