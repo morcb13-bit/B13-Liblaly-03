@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>二つの円環のつなぎ方</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 二つ目の円環を、五角形を分け合う50通りの位置に置き、番地の偶奇が合うかを整数で判定する */
+:root{
+  --bg:#efede6; --panel:#f8f7f2; --ink:#1e2724; --muted:#5d6660; --rule:#cfcabd;
+  --c0:#e0b030; --c1:#1f5fa8; --c2:#b0452a; --c3:#3d7d4f; --c4:#ffffff; --edge:#39443f; --hl:#1e2724; --ok:#2e7d4f; --ng:#c0392b;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;padding-block:16px 28px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0}
+canvas{width:100%;max-width:560px;aspect-ratio:1/1;height:auto;justify-self:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.kv b{font-family:var(--mono);font-weight:600;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+label{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.35rem,4vw,1.8rem);margin:0;letter-spacing:.02em}
+p{margin:0;line-height:1.75;color:var(--ink)}
+.note{font-size:.85rem;color:var(--muted);line-height:1.65}
+code{font-family:var(--mono);font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>二つの円環のつなぎ方</h1>
+  <div class="box">
+    <canvas id="cv" width="1000" height="1000" aria-label="二つ目の円環を50通りの位置に置いて判定する図"></canvas>
+    <div class="controls">
+      <button id="play">停止</button>
+      <button id="step">一歩</button>
+      <button id="reset">はじめから</button>
+      <label>速さ <input id="speed" type="range" min="1" max="8" value="3"></label>
+    </div>
+    <div class="kv">
+      <div><span>置き方</span><b id="idx">1 / 50</b></div>
+      <div><span>判定</span><b id="res">—</b></div>
+      <div><span>二つ目の円環の中心</span><b id="cen">—</b></div>
+      <div><span>中心の距離²</span><b id="d2">—</b></div>
+      <div><span>つながる</span><b id="nok">0</b></div>
+      <div><span>向きが食い違う</span><b id="nng">0</b></div>
+    </div>
+  </div>
+  <p>真ん中の円環（色つき）は動かしません。二つ目の円環（枠だけ）を、一つ目の五角形のどれか一枚に二つ目の五角形のどれか一枚が重なる位置に置きます。番地の組は 10 × 10 ですが、同じ位置になるものをまとめると置き方は 50 通りです。</p>
+  <p>二つの円環が同じ席に置いた五角形は、両方の番地の偶奇が一致しないと向きが 36° 食い違います。図では、分け合う席を緑（向きが合う）と赤（食い違う）で示します。一つでも赤があれば、その置き方ではつながりません。</p>
+  <p>50 通りのうち、つながるのは 20 通りで、どれも五角形をちょうど 2 枚分け合います。分け合う2枚が円環の中で隣り合うつなぎ方（連続）と、間に2枚をはさむつなぎ方（2つ飛ばし）の2種類が、それぞれ 10 方向ずつあります。中心の距離² は 2つ飛ばしが 3 + 4φ、連続が 7 + 11φ で、距離の比はちょうど φ です。</p>
+  <p class="note">判定は番地の偶奇の比較（整数）だけです。つながる 20 通りで五角形どうしが重ならないことは、本文の検算スクリプトで別に確かめています。画面の座標に直す最後の一回だけ、観察者側の表示として実数を使っています。</p>
+</div>
+<script>
+// ── 整数だけの道具 ──
+const add=(a,b)=>a.map((x,i)=>x+b[i]), sub=(a,b)=>a.map((x,i)=>x-b[i]);
+function turn(a,k){let v=a.slice();k=((k%10)+10)%10;for(let i=0;i<k;i++){const[c0,c1,c2,c3]=v;v=[-c3,c0+c3,c1-c3,c2+c3];}return v;}
+function mul(a,b){let o=[0,0,0,0];a.forEach((n,k)=>{const t=turn(b,k);for(let i=0;i<Math.abs(n);i++)o=n>0?add(o,t):sub(o,t);});return o;}
+function conj(a){let o=[0,0,0,0];a.forEach((n,k)=>{const t=turn([1,0,0,0],10-k);for(let i=0;i<Math.abs(n);i++)o=n>0?add(o,t):sub(o,t);});return o;}
+function dist2(a){const z=mul(a,conj(a));return [z[0]-z[2],z[2]];}
+const ZERO=[0,0,0,0], PHI2=[2,0,1,-1], key=a=>a.join(",");
+function ring(c){const m=new Map();for(let k=0;k<10;k++)m.set(key(add(c,turn(PHI2,k))),{p:add(c,turn(PHI2,k)),a:k});return m;}
+const R1=ring(ZERO);
+const C=[],seen=new Set();
+for(let j=0;j<10;j++)for(let k=0;k<10;k++){const c=sub(turn(PHI2,j),turn(PHI2,k));if(key(c)===key(ZERO)||seen.has(key(c)))continue;seen.add(key(c));C.push(c);}
+const RES=C.map(c=>{const R2=ring(c);const sh=[];for(const[k,v]of R1)if(R2.has(k))sh.push({p:v.p,ok:(v.a-R2.get(k).a)%2===0});return{c,R2,sh,ok:sh.every(s=>s.ok)};});
+
+// ── 観察者側の表示（ここだけ実数） ──
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+const Z=[...Array(10)].map((_,k)=>[Math.cos(Math.PI*k/5),Math.sin(Math.PI*k/5)]);
+const xy=a=>[a[0]+a[1]*Z[1][0]+a[2]*Z[2][0]+a[3]*Z[3][0], a[1]*Z[1][1]+a[2]*Z[2][1]+a[3]*Z[3][1]];
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function pent(p,a,S,cx,cy){const c=xy(p);ctx.beginPath();for(let i=0;i<5;i++){const v=Z[(a+2*i)%10];const X=cx+(c[0]+v[0])*S,Y=cy-(c[1]+v[1])*S;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}ctx.closePath();}
+function draw(n){
+  const W=cv.width,S=W/19.5,cx=W/2,cy=W/2;ctx.clearRect(0,0,W,W);
+  for(const v of R1.values()){pent(v.p,v.a,S,cx,cy);ctx.fillStyle=css("--c"+(v.a%5));ctx.fill();ctx.lineWidth=2.2;ctx.strokeStyle=css("--edge");ctx.stroke();}
+  const r=RES[n];
+  for(const v of r.R2.values()){pent(v.p,v.a,S,cx,cy);ctx.lineWidth=3;ctx.strokeStyle=r.ok?css("--ok"):css("--ng");ctx.setLineDash([9,6]);ctx.stroke();ctx.setLineDash([]);}
+  for(const s of r.sh){const v=R1.get(key(s.p));pent(v.p,v.a,S,cx,cy);ctx.lineWidth=9;ctx.strokeStyle=s.ok?css("--ok"):css("--ng");ctx.stroke();}
+  const d=dist2(r.c);let ok=0,ng=0;for(let i=0;i<=n;i++)RES[i].ok?ok++:ng++;
+  document.getElementById("idx").textContent=(n+1)+" / "+RES.length;
+  document.getElementById("res").textContent=r.ok?"つながる（"+r.sh.length+"枚を分け合う）":"向きが食い違う";
+  document.getElementById("cen").textContent="("+r.c.join(", ")+")";
+  document.getElementById("d2").textContent=d[0]+" + "+d[1]+"φ";
+  document.getElementById("nok").textContent=ok;document.getElementById("nng").textContent=ng;
+}
+// ── 再生 ──
+let n=0,playing=true,acc=0,prev=0;
+const speed=document.getElementById("speed"),btn=document.getElementById("play");
+function step(){n=(n+1)%RES.length;draw(n);}
+function loop(t){if(playing){acc+=(t-prev)*speed.value;if(acc>3600){acc=0;step();}}prev=t;requestAnimationFrame(loop);}
+btn.onclick=()=>{playing=!playing;btn.textContent=playing?"停止":"再生";};
+document.getElementById("step").onclick=()=>{playing=false;btn.textContent="再生";step();};
+document.getElementById("reset").onclick=()=>{n=0;draw(n);};
+draw(n);requestAnimationFrame(t=>{prev=t;loop(t);});
+</script>
+</body>
+</html>
