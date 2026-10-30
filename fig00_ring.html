@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>五角形10枚の円環</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 五角形10枚の円環と、円環5個が真ん中に残す五芒星。位置は整数4つ (a0,a1,a2,a3)＝a0+a1ζ+a2ζ²+a3ζ³ */
+:root{
+  --bg:#efede6; --panel:#f8f7f2; --ink:#1e2724; --muted:#5d6660; --rule:#cfcabd;
+  --c0:#e0b030; --c1:#1f5fa8; --c2:#b0452a; --c3:#3d7d4f; --c4:#ffffff; --edge:#39443f; --hl:#1e2724;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;padding-block:16px 28px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0}
+canvas{width:100%;max-width:560px;aspect-ratio:1/1;height:auto;justify-self:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.kv b{font-family:var(--mono);font-weight:600;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+label{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.35rem,4vw,1.8rem);margin:0;letter-spacing:.02em}
+p{margin:0;line-height:1.75;color:var(--ink)}
+.note{font-size:.85rem;color:var(--muted);line-height:1.65}
+code{font-family:var(--mono);font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>五角形10枚の円環</h1>
+  <div class="box">
+    <canvas id="cv" width="1000" height="1000" aria-label="五角形10枚の円環と、円環5個が残す五芒星"></canvas>
+    <div class="controls">
+      <button id="play">停止</button>
+      <button id="step">一歩</button>
+      <button id="reset">はじめから</button>
+      <label>速さ <input id="speed" type="range" min="1" max="8" value="3"></label>
+    </div>
+    <div class="kv">
+      <div><span>場面</span><b id="scene">円環1個</b></div>
+      <div><span>置いた席</span><b id="seats">0</b></div>
+      <div><span>五角形</span><b id="cells">0</b></div>
+      <div><span>分け合う五角形</span><b id="shared">0</b></div>
+      <div><span>いま置いた位置</span><b id="pos">—</b></div>
+      <div><span>番地</span><b id="addr">—</b></div>
+    </div>
+  </div>
+  <p>平面の点を、整数4つ <code>(a0, a1, a2, a3)</code> ＝ a0 + a1ζ + a2ζ² + a3ζ³ で書きます。ζ は 36° 回った一歩で、ζ を一回掛けるのは <code>(c0, c1, c2, c3) → (−c3, c0+c3, c1−c3, c2+c3)</code> という足し算と引き算だけです。φ ＝ (1, 0, 1, −1)、φ² ＝ φ + 1 ＝ (2, 0, 1, −1) です。</p>
+  <p>最初の場面では、中心のまわり φ²·ζ^k（k ＝ 0〜9）に五角形を一枚ずつ置きます。k が番地で、番地の偶奇で五角形の向きが決まり、5で割った余りで色が決まります。隣どうしは辺で接し、10枚で輪が閉じます。</p>
+  <p>次の場面では、同じ円環を中心から φ³ の距離に5個置きます。席は 50 ありますが、二つの円環が同じ五角形を分け合うので、五角形は 40 枚です（太い枠が分け合う五角形）。真ん中には五角形の置かれない穴が残り、その形は五芒星です。</p>
+  <p class="note">図の中の計算は整数の足し算と引き算だけです。画面の座標に直す最後の一回だけ、観察者側の表示として実数を使っています。</p>
+</div>
+<script>
+// ── 整数だけの道具 ──
+const add=(a,b)=>a.map((x,i)=>x+b[i]);
+function turn(a,k){let v=a.slice();k=((k%10)+10)%10;for(let i=0;i<k;i++){const[c0,c1,c2,c3]=v;v=[-c3,c0+c3,c1-c3,c2+c3];}return v;}
+const ZERO=[0,0,0,0], PHI=[1,0,1,-1], PHI2=add(PHI,[1,0,0,0]);
+const key=a=>a.join(",");
+function ring(c){const out=[];for(let k=0;k<10;k++)out.push({p:add(c,turn(PHI2,k)),a:k});return out;}
+// 場面1：中心0の円環。場面2：中心から φ³ の円環5個（(3,0,2,−2) を 72° ずつ回す）
+const G=[3,0,2,-2];
+const scene1=ring(ZERO);
+const scene2=[];for(let m=0;m<5;m++)for(const s of ring(turn(G,2*m)))scene2.push(s);
+const STEPS=[...scene1.map(s=>({sc:1,...s})),{sc:0},...scene2.map(s=>({sc:2,...s})),{sc:3}];
+
+// ── 観察者側の表示（ここだけ実数） ──
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+const Z=[...Array(10)].map((_,k)=>[Math.cos(Math.PI*k/5),Math.sin(Math.PI*k/5)]);
+const xy=a=>[a[0]+a[1]*Z[1][0]+a[2]*Z[2][0]+a[3]*Z[3][0], a[1]*Z[1][1]+a[2]*Z[2][1]+a[3]*Z[3][1]];
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function draw(n){
+  const W=cv.width,S=W/17.4,cx=W/2,cy=W/2;
+  ctx.clearRect(0,0,W,W);
+  const cur=STEPS[n-1]; const sc=n<=11?1:2;
+  const list=STEPS.slice(sc===1?0:11,n).filter(s=>s.sc===sc);
+  const cnt=new Map();for(const s of list)cnt.set(key(s.p),(cnt.get(key(s.p))||0)+1);
+  const seen=new Set();
+  for(const s of list){
+    const k=key(s.p); if(seen.has(k))continue; seen.add(k);
+    const c=xy(s.p);ctx.beginPath();
+    for(let i=0;i<5;i++){const v=Z[(s.a+2*i)%10];const X=cx+(c[0]+v[0])*S,Y=cy-(c[1]+v[1])*S;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}
+    ctx.closePath();ctx.fillStyle=css("--c"+(s.a%5));ctx.fill();
+    const sh=cnt.get(k)>1;ctx.lineWidth=sh?7:2.2;ctx.strokeStyle=sh?css("--hl"):css("--edge");ctx.stroke();
+  }
+  if(STEPS[n-1]&&STEPS[n-1].sc===3){ // 真ん中の五芒星を示す
+    ctx.beginPath();
+    for(let i=0;i<10;i++){const r=(i%2?1.618034:1/1.618034)*0.97;const v=Z[i];const X=cx+v[0]*r*S,Y=cy-v[1]*r*S;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}
+    ctx.closePath();ctx.lineWidth=4;ctx.setLineDash([10,8]);ctx.strokeStyle=css("--hl");ctx.stroke();ctx.setLineDash([]);
+  }
+  const seats=list.length,cells=seen.size;
+  document.getElementById("scene").textContent=sc===1?"円環1個":"円環5個";
+  document.getElementById("seats").textContent=seats;
+  document.getElementById("cells").textContent=cells;
+  document.getElementById("shared").textContent=seats-cells;
+  const last=list[list.length-1];
+  document.getElementById("pos").textContent=last?"("+last.p.join(", ")+")":"—";
+  document.getElementById("addr").textContent=last?last.a:"—";
+}
+// ── 再生 ──
+let n=1,playing=true,acc=0,prev=0;
+const speed=document.getElementById("speed"),btn=document.getElementById("play");
+function step(){n=n>=STEPS.length?1:n+1;draw(n);}
+function loop(t){if(playing){acc+=(t-prev)*speed.value;if(acc>2400){acc=0;step();}}prev=t;requestAnimationFrame(loop);}
+btn.onclick=()=>{playing=!playing;btn.textContent=playing?"停止":"再生";};
+document.getElementById("step").onclick=()=>{playing=false;btn.textContent="再生";step();};
+document.getElementById("reset").onclick=()=>{n=1;draw(n);};
+draw(n);requestAnimationFrame(t=>{prev=t;loop(t);});
+</script>
+</body>
+</html>
