@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>13は3²と2²</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 振幅3の波と振幅2の波を重ねる。山をそろえると振幅²25、直角にずらすと振幅²13＝3²+2² */
+:root{
+  --bg:#efede6; --panel:#f8f7f2; --ink:#1e2724; --muted:#5d6660; --rule:#cfcabd;
+  --c0:#e0b030; --c1:#1f5fa8; --c2:#b0452a; --c3:#3d7d4f; --c4:#ffffff; --edge:#39443f; --hl:#1e2724;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;padding-block:16px 28px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0}
+svg.d{width:100%;max-width:560px;height:auto;justify-self:center}
+canvas{width:100%;max-width:560px;aspect-ratio:1/1;height:auto;justify-self:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.kv b{font-family:var(--mono);font-weight:600;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+label{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.35rem,4vw,1.8rem);margin:0;letter-spacing:.02em}
+p{margin:0;line-height:1.75;color:var(--ink)}
+.note{font-size:.85rem;color:var(--muted);line-height:1.65}
+code{font-family:var(--mono);font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>13は3²と2²</h1>
+  <div class="box">
+    <svg class="d" id="wave" viewBox="0 0 1000 620" aria-label="振幅3の波と振幅2の波を重ねた図"></svg>
+    <div class="controls">
+      <button id="play">停止</button>
+      <button id="step">一歩</button>
+      <button id="reset">はじめから</button>
+      <label>速さ <input id="speed" type="range" min="1" max="8" value="3"></label>
+    </div>
+    <div class="kv">
+      <div><span>二つの波のずれ</span><b id="ph">0°</b></div>
+      <div><span>重ねた波の振幅²</span><b id="amp">25 ＝ (3 + 2)²</b></div>
+      <div><span>13の番地の目盛り</span><b>13 ＝ 3² + 2²</b></div>
+    </div>
+  </div>
+  <p>振幅 3 の波（青）と振幅 2 の波（緑）を重ねます。どちらも 13 目盛りで一周する同じ速さの波で、点は 13 の目盛りの位置です。二つの波の山をそろえて重ねると、振幅は 3 + 2 ＝ 5 になり、振幅² は 25 です。</p>
+  <p>二つの波を 13 目盛りの 4 分の 1（90°）だけずらして重ねると、重ねた波（赤）の振幅² は 3² + 2² ＝ 13 になります。右の円は二つの波を矢印にしたもので、横 3・縦 2 の矢印の長さ² が 9 + 4 ＝ 13 です。13の番地の 13 は、2 と 3 の二つの波を直角に重ねたときに、振幅² として現れる数です。</p>
+  <p class="note">振幅² は整数の足し算で出しています（そろえたとき 9 + 4 + 12 ＝ 25、直角のとき 9 + 4 ＋ 0 ＝ 13）。波の形と途中のずれを描く部分だけ、観察者側の表示として実数を使っています。</p>
+</div>
+<script>
+// 整数の部分：振幅² ＝ 3² + 2² + 2·3·2·（ずれの cos）。ずれ 0 → 9+4+12 = 25、ずれ 90° → 9+4+0 = 13
+const A=3,B=2, SQ=x=>x*x, AMP_SAME=SQ(A)+SQ(B)+A*B+A*B, AMP_RIGHT=SQ(A)+SQ(B);
+const NS="http://www.w3.org/2000/svg",svg=document.getElementById("wave");
+const css=k=>getComputedStyle(document.documentElement).getPropertyValue(k).trim();
+function el(t,a,txt){const e=document.createElementNS(NS,t);for(const k in a)e.setAttribute(k,a[k]);if(txt!==undefined)e.textContent=txt;svg.appendChild(e);return e;}
+// ── 観察者側の表示 ──
+const L=60,R=700,CY=330,U=48,T=26; // 2周分 = 26 目盛り
+const sx=t=>L+(R-L)*t/T;
+function curve(f,col,w,dots){let d="";for(let i=0;i<=260;i++){const t=T*i/260;d+=(i?"L":"M")+sx(t).toFixed(1)+" "+(CY-U*f(t)).toFixed(1);}
+  el("path",{d,fill:"none",stroke:col,"stroke-width":w});if(dots)for(let k=0;k<=T;k++)el("circle",{cx:sx(k),cy:CY-U*f(k),r:w>3?6:4,fill:col});}
+function draw(phase,cursor){
+  svg.innerHTML="";const th=t=>2*Math.PI*t/13, p=phase*Math.PI/180;
+  for(const v of [5,Math.sqrt(13),3,2,0,-2,-3,-Math.sqrt(13),-5]){el("line",{x1:L,y1:CY-U*v,x2:R,y2:CY-U*v,stroke:css("--rule"),"stroke-width":v===0?2:1,"stroke-dasharray":v===0?"":"4 6"});}
+  [[5,"5"],[Math.sqrt(13),"√13"],[3,"3"],[2,"2"]].forEach(([v,s])=>{el("text",{x:L-10,y:CY-U*v+7,"text-anchor":"end","font-size":18,fill:css("--muted"),"font-family":"IBM Plex Mono,monospace"},s);});
+  for(const k of [0,13,26])el("text",{x:sx(k),y:CY+U*5+38,"text-anchor":"middle","font-size":18,fill:css("--ink"),"font-family":"IBM Plex Mono,monospace"},k+"目盛り");
+  curve(t=>A*Math.cos(th(t)),css("--c1"),2.5,true);
+  curve(t=>B*Math.cos(th(t)-p),css("--c3"),2.5,true);
+  curve(t=>A*Math.cos(th(t))+B*Math.cos(th(t)-p),css("--c2"),5,true);
+  const cx=sx(cursor);el("line",{x1:cx,y1:CY-U*5.4,x2:cx,y2:CY+U*5.4,stroke:css("--ink"),"stroke-width":1.5,"stroke-dasharray":"3 5"});
+  // 右の円：矢印 3 と 2 を足す
+  const OX=838,OY=CY,S=31,a=th(cursor);
+  el("circle",{cx:OX,cy:OY,r:S*5,fill:"none",stroke:css("--rule"),"stroke-width":1.5,"stroke-dasharray":"4 6"});
+  el("circle",{cx:OX,cy:OY,r:S*Math.sqrt(13),fill:"none",stroke:css("--c2"),"stroke-width":2});
+  const v1=[A*Math.cos(a),A*Math.sin(a)],v2=[B*Math.cos(a-p),B*Math.sin(a-p)];
+  const P=(x,y)=>[OX+x*S,OY-y*S];
+  const arrow=(x0,y0,x1,y1,col,w)=>{const[a0,b0]=P(x0,y0),[a1,b1]=P(x1,y1);el("line",{x1:a0,y1:b0,x2:a1,y2:b1,stroke:col,"stroke-width":w,"stroke-linecap":"round"});el("circle",{cx:a1,cy:b1,r:w+2,fill:col});};
+  arrow(0,0,v1[0],v1[1],css("--c1"),5);arrow(v1[0],v1[1],v1[0]+v2[0],v1[1]+v2[1],css("--c3"),5);
+  arrow(0,0,v1[0]+v2[0],v1[1]+v2[1],css("--c2"),3);
+  el("text",{x:OX,y:OY+S*5+38,"text-anchor":"middle","font-size":18,fill:css("--ink"),"font-family":"BIZ UDPGothic,sans-serif"},"矢印 3 と 2 を足す");
+  const at0=Math.abs(phase)<1e-9, at90=Math.abs(phase-90)<1e-9;
+  document.getElementById("ph").textContent=at0?"0°（山をそろえる）":at90?"90°（直角）":Math.round(phase)+"°";
+  document.getElementById("amp").textContent=at0?AMP_SAME+" ＝ (3 + 2)²":at90?AMP_RIGHT+" ＝ 3² + 2²":"≈ "+(13+12*Math.cos(p)).toFixed(1)+"（観察者側）";
+}
+// 進め方：そろえて1周 → 90°へずらす → 直角で1周 → 0°へ戻す
+const FR=[];for(let c=0;c<=13;c++)FR.push([0,c]);for(let i=1;i<=9;i++)FR.push([10*i,13]);for(let c=13;c<=26;c++)FR.push([90,c]);for(let i=8;i>=0;i--)FR.push([10*i,26]);
+let n=0,playing=true,acc=0,prev=0;
+const speed=document.getElementById("speed"),btn=document.getElementById("play");
+function adv(){n=(n+1)%FR.length;draw(...FR[n]);}
+function loop(t){if(playing){acc+=(t-prev)*speed.value;if(acc>1500){acc=0;adv();}}prev=t;requestAnimationFrame(loop);}
+btn.onclick=()=>{playing=!playing;btn.textContent=playing?"停止":"再生";};
+document.getElementById("step").onclick=()=>{playing=false;btn.textContent="再生";adv();};
+document.getElementById("reset").onclick=()=>{n=0;draw(...FR[0]);};
+draw(...FR[0]);requestAnimationFrame(t=>{prev=t;loop(t);});
+</script>
+</body>
+</html>
