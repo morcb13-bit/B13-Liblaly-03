@@ -1,0 +1,126 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>鎖のデジタル計算尺</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* ジグザグの鎖を定規にした計算尺。下の定規を滑らせて足し算・引き算、φ^n の目盛りで掛け算・割り算 */
+:root{
+  --bg:#efede6; --panel:#f8f7f2; --ink:#1e2724; --muted:#5d6660; --rule:#cfcabd;
+  --c0:#e0b030; --c1:#1f5fa8; --c2:#b0452a; --c3:#3d7d4f; --c4:#6a4e9b; --edge:#39443f; --hl:#1e2724;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;padding-block:16px 28px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0}
+canvas{width:100%;max-width:720px;aspect-ratio:2/1;height:auto;justify-self:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.kv b{font-family:var(--mono);font-weight:600;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+label{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.35rem,4vw,1.8rem);margin:0;letter-spacing:.02em}
+p{margin:0;line-height:1.75;color:var(--ink)}
+.note{font-size:.85rem;color:var(--muted);line-height:1.65}
+code{font-family:var(--mono);font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>鎖のデジタル計算尺</h1>
+  <div class="box">
+    <canvas id="cv" width="1200" height="600" aria-label="二本の鎖の定規を滑らせて計算する図"></canvas>
+    <div class="controls">
+      <button id="play">停止</button>
+      <button id="step">一歩</button>
+      <button id="reset">はじめから</button>
+      <label>速さ <input id="speed" type="range" min="1" max="8" value="3"></label>
+    </div>
+    <div class="kv">
+      <div><span>計算</span><b id="q">—</b></div>
+      <div><span>目盛り</span><b id="mode">—</b></div>
+      <div><span>読み</span><b id="ans">—</b></div>
+      <div><span>位置の一致（整数）</span><b id="chk">—</b></div>
+    </div>
+  </div>
+  <p>上の定規 A と下の定規 B は、どちらも円環をジグザグにつないだ鎖です。環の番号 n が目盛りです。B の目盛り 0 を A の目盛り a に合わせて滑らせると、B の目盛り b の位置に A の目盛り a ＋ b が来ます。A の a が奇数のときは、B を鏡に写した鎖（もう一方の波）にして左右をそろえます。逆に滑らせれば引き算です。</p>
+  <p>目盛りに n の代わりに φ^n ＝ F(n−1) ＋ F(n)φ（係数はフィボナッチ数）を書くと、同じ滑らせ方が掛け算になります。φ^a に φ^b を掛けると φ^(a+b) で、目盛りどうしを足すだけです。逆に滑らせれば割り算です。φ を掛けるのは (p, q) → (q, p + q)、φ で割るのは (p, q) → (q − p, p) で、どちらも足し算と引き算だけです。</p>
+  <p class="note">鎖の位置、滑らせたあとの位置の一致、φ^n の係数は整数だけで計算しています。定規を横に描き、滑らせる途中を見せる部分だけ、観察者側の表示として実数を使っています。</p>
+</div>
+<script>
+const CA=[4,-1,2,-3],CB=[1,2,2,1];
+const add=(a,b)=>a.map((x,i)=>x+b[i]),sub=(a,b)=>a.map((x,i)=>x-b[i]),eq=(a,b)=>a.every((x,i)=>x===b[i]);
+function zig(n,mirror){const st=mirror?[CB,CA]:[CA,CB],cs=[[0,0,0,0]];for(let i=0;i<n-1;i++)cs.push(add(cs[i],st[i%2]));return cs;}
+function phipow(n){let v=[1,0];for(let i=0;i<Math.abs(n);i++)v=n>0?[v[1],v[0]+v[1]]:[v[1]-v[0],v[0]];return v;}
+const fmtP=([p,q])=>"("+p+(q<0?" − "+(-q):" + "+q)+"φ)";
+const N=20,A=zig(N+1,false);
+const PROB=[{op:"+",a:3,b:5},{op:"+",a:7,b:6},{op:"−",a:6,b:7},{op:"×",a:5,b:7},{op:"÷",a:7,b:5}];
+// ── 観察者側の表示 ──
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+const Z=[...Array(4)].map((_,k)=>[Math.cos(Math.PI*k/5),Math.sin(Math.PI*k/5)]);
+const xy=a=>[a[0]+a[1]*Z[1][0]+a[2]*Z[2][0]+a[3]*Z[3][0],a[1]*Z[1][1]+a[2]*Z[2][1]+a[3]*Z[3][1]];
+const W=xy(add(CA,CB)),ANG=Math.atan2(W[1],W[0]),LW=Math.hypot(...W);
+const rot=p=>{const c=Math.cos(-ANG),s=Math.sin(-ANG);return[p[0]*c-p[1]*s,p[0]*s+p[1]*c];};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const S=1120/(N/2*LW+2),X0=40;
+function ruler(cs,dx,Y0,col,labels,hi,name){
+  const pts=cs.map(c=>rot(xy(c)));
+  ctx.beginPath();pts.forEach((p,i)=>{const X=X0+dx+p[0]*S,Y=Y0-p[1]*S;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.strokeStyle=col;ctx.lineWidth=3;ctx.stroke();
+  pts.forEach((p,i)=>{const X=X0+dx+p[0]*S,Y=Y0-p[1]*S;ctx.beginPath();ctx.arc(X,Y,hi.includes(i)?15:9,0,7);ctx.fillStyle=hi.includes(i)?css("--c2"):css("--panel");ctx.fill();ctx.lineWidth=2.5;ctx.strokeStyle=col;ctx.stroke();
+    ctx.fillStyle=css("--ink");ctx.textAlign="center";ctx.font=(hi.includes(i)?"bold 17px":"14px")+" IBM Plex Mono,monospace";ctx.fillText(labels(i),X,Y0+(name==="A"?-46:52)+(i%2?8:0));});
+  ctx.font="bold 22px BIZ UDPGothic,sans-serif";ctx.textAlign="left";ctx.fillStyle=col;ctx.fillText(name,8,Y0+6);
+}
+function frame(k,t){ // k: 問題番号, t: 0..1 滑らせる途中
+  const p=PROB[k],mul=p.op==="×"||p.op==="÷",sub_=p.op==="−"||p.op==="÷";
+  const a=sub_?p.a+p.b:p.a; // 引き算・割り算は A の a+b から b を戻す
+  const mirror=(sub_?p.a:a)%2===1,Bc=zig(N+1,mirror);
+  const target=sub_?p.a:a,dxEnd=rot(xy(A[target]))[0]*S,dx=dxEnd*t;
+  const res=sub_?p.a:a+p.b;
+  ctx.clearRect(0,0,1200,600);
+  const lab=i=>mul?"φ"+i:String(i), labB=i=>mul?"φ"+i:String(i);
+  ruler(A,0,190,css("--c1"),lab,t===1?[target,res,sub_?a:res]:[],"A");
+  ruler(Bc,dx,410,css("--c3"),labB,t===1?[0,p.b]:[],"B");
+  if(t===1){const ra=rot(xy(A[sub_?a:res]))[0]*S+X0;ctx.setLineDash([6,6]);ctx.strokeStyle=css("--ink");ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(ra,150);ctx.lineTo(ra,450);ctx.stroke();
+    const r0=rot(xy(A[target]))[0]*S+X0;ctx.beginPath();ctx.moveTo(r0,150);ctx.lineTo(r0,450);ctx.stroke();ctx.setLineDash([]);}
+  // 整数の一致：B の b の位置（A[target] + Bc[b]）が A の目盛りに一致するか
+  const posB=add(A[target],Bc[p.b]),hit=A.findIndex(x=>eq(x,posB));
+  const L=sub_?p.a+p.b:p.a;document.getElementById("q").textContent=mul?"φ"+L+" "+p.op+" φ"+p.b:L+" "+p.op+" "+p.b;
+  document.getElementById("mode").textContent=mul?"φ^n（掛け算・割り算）":"n（足し算・引き算）";
+  let ans="—";
+  if(t===1){
+    if(p.op==="+")ans=String(hit);
+    if(p.op==="−")ans=String(target)+"（B の "+p.b+" を A の "+(target+p.b)+" に合わせて 0 を読む）";
+    if(p.op==="×"){const x=phipow(p.a),y=phipow(p.b),z=phipow(hit);ans="φ"+hit+" ＝ "+fmtP(z)+"（"+fmtP(x)+" × "+fmtP(y)+"）";}
+    if(p.op==="÷")ans="φ"+target+" ＝ "+fmtP(phipow(target))+"、"+fmtP(phipow(target))+" × "+fmtP(phipow(p.b))+" ＝ "+fmtP(phipow(target+p.b));
+  }
+  document.getElementById("ans").textContent=ans;
+  document.getElementById("chk").textContent=t===1?(sub_?"A["+target+"] + B["+p.b+"] ＝ A["+hit+"]":"A["+target+"] + B["+p.b+"] ＝ A["+hit+"]"):"—";
+}
+const FR=[];PROB.forEach((_,k)=>{for(let i=0;i<=6;i++)FR.push([k,i/6]);FR.push([k,1]);FR.push([k,1]);});
+let n=0,playing=true,acc=0,prev=0;
+const speed=document.getElementById("speed"),btn=document.getElementById("play");
+function adv(){n=(n+1)%FR.length;frame(...FR[n]);}
+function loop(t){if(playing){acc+=(t-prev)*speed.value;if(acc>900){acc=0;adv();}}prev=t;requestAnimationFrame(loop);}
+btn.onclick=()=>{playing=!playing;btn.textContent=playing?"停止":"再生";};
+document.getElementById("step").onclick=()=>{playing=false;btn.textContent="再生";adv();};
+document.getElementById("reset").onclick=()=>{n=0;frame(...FR[0]);};
+frame(...FR[0]);requestAnimationFrame(t=>{prev=t;loop(t);});
+</script>
+</body>
+</html>

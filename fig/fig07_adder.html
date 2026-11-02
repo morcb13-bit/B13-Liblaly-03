@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>鎖の半加算器</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 二本のジグザグの鎖をつないで足し、V字（3）・1・重ねの部品で平衡3進の桁と繰り上がりを読む */
+:root{
+  --bg:#efede6; --panel:#f8f7f2; --ink:#1e2724; --muted:#5d6660; --rule:#cfcabd;
+  --c0:#e0b030; --c1:#1f5fa8; --c2:#b0452a; --c3:#3d7d4f; --c4:#6a4e9b; --edge:#39443f; --hl:#1e2724;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;padding-block:16px 28px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0}
+canvas{width:100%;max-width:720px;aspect-ratio:2/1;height:auto;justify-self:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.kv b{font-family:var(--mono);font-weight:600;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+label{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.35rem,4vw,1.8rem);margin:0;letter-spacing:.02em}
+p{margin:0;line-height:1.75;color:var(--ink)}
+.note{font-size:.85rem;color:var(--muted);line-height:1.65}
+code{font-family:var(--mono);font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>鎖の半加算器</h1>
+  <div class="box">
+    <canvas id="cv" width="1200" height="600" aria-label="二本の鎖をつないで足す図"></canvas>
+    <div class="controls">
+      <button id="play">停止</button>
+      <button id="step">一歩</button>
+      <button id="reset">はじめから</button>
+      <label>速さ <input id="speed" type="range" min="1" max="8" value="3"></label>
+    </div>
+    <div class="kv">
+      <div><span>足し算</span><b id="sum">—</b></div>
+      <div><span>a の部品</span><b id="pa">—</b></div>
+      <div><span>b の部品</span><b id="pb">—</b></div>
+      <div><span>和の部品</span><b id="ps">—</b></div>
+      <div><span>繰り上がり</span><b id="carry">—</b></div>
+    </div>
+  </div>
+  <p>数 n を、円環 n 個のジグザグの鎖で持ちます。連続する三つの環はどれも 108° に折れた V字（3）で、1 の印をいちばん少なくなるように部品に分けると、V字の数 k と印 d（+1 は余った 1 環、−1 は二つの V字が分け合う 1 環）で n ＝ 3k ＋ d と読めます。d が平衡3進の一の位です。</p>
+  <p>二本の鎖 a と b を、a の終わりから一歩進めてつなぐと、和 a ＋ b の鎖とそっくり重なります。左右が交互になるように、a が奇数のときは b を鏡に写した鎖（もう一方の波）でつなぎます。つないだ鎖を部品に分け直すと、a と b の印が合わさって和の印と繰り上がりになります。余った 1 環が二つ集まると、もう一つ環を借りて V字が一つ増え、重ねの印が一つ残ります（1 ＋ 1 ＝ 3 − 1、繰り上がり +1）。重ねが二つ集まると、V字が一つ減って 1 環が余ります（−1 − 1 ＝ −3 ＋ 1、繰り上がり −1）。</p>
+  <p class="note">鎖の位置、V字かどうか（隣り合う二歩の向きが左右入れ替わっているか）、部品の分け方は整数だけで決めています。横軸に回して描く座標だけ、観察者側の表示として実数を使っています。</p>
+</div>
+<script>
+const CA=[4,-1,2,-3],CB=[1,2,2,1];
+const add=(a,b)=>a.map((x,i)=>x+b[i]),eq=(a,b)=>a.every((x,i)=>x===b[i]);
+function zig(n,mirror){const st=mirror?[CB,CA]:[CA,CB],cs=[[0,0,0,0]];for(let i=0;i<n-1;i++)cs.push(add(cs[i],st[i%2]));return cs;}
+function join(a,b){const A=zig(a,false),nxt=(a-1)%2===0?CA:CB,Bc=zig(b,eq(nxt,CA)),off=add(A[A.length-1],nxt);return{cs:A.concat(Bc.map(p=>add(off,p))),mirror:eq(nxt,CA),off};}
+function parts(cs){ // 部品を読む：V字＝三つの環で、二歩の向きが入れ替わっている
+  const n=cs.length,step=i=>cs[i+1].map((x,j)=>x-cs[i][j]);
+  const isV=i=>i+2<n&&!eq(step(i),step(i+1));
+  const memo=new Map();
+  function go(i,sh){if(i===n)return[0,0,0,[]];if(i>n)return[1e9,0,0,[]];const key=i+","+sh;if(memo.has(key))return memo.get(key);
+    const c=[];
+    if(isV(i)){const r=go(i+3,false);c.push([r[0],r[1]+1,r[2],[["V",i,i+1,i+2]].concat(r[3])]);
+      if(!sh&&isV(i+2)){const r2=go(i+2,true);if(r2[0]<1e9)c.push([r2[0]+1,r2[1]+1,r2[2]-1,[["V",i,i+1,i+2],["S",i+2]].concat(r2[3])]);}}
+    const r=go(i+1,false);c.push([r[0]+1,r[1],r[2]+1,[["1",i]].concat(r[3])]);
+    c.sort((x,y)=>x[0]-y[0]||y[1]-x[1]);memo.set(key,c[0]);return c[0];}
+  const r=go(0,false);return{k:r[1],d:r[2],list:r[3]};
+}
+const fmt=p=>"V字 "+p.k+"、印 "+(p.d>0?"+":"")+p.d;
+const EX=[[7,7],[4,7],[5,5],[7,5],[10,13]];
+const FR=[];EX.forEach(([a,b])=>{for(let s=0;s<3;s++)FR.push({a,b,s});});
+// ── 観察者側の表示 ──
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+const Z=[...Array(4)].map((_,k)=>[Math.cos(Math.PI*k/5),Math.sin(Math.PI*k/5)]);
+const xy=a=>[a[0]+a[1]*Z[1][0]+a[2]*Z[2][0]+a[3]*Z[3][0],a[1]*Z[1][1]+a[2]*Z[2][1]+a[3]*Z[3][1]];
+const W=xy(add(CA,CB)),ANG=Math.atan2(W[1],W[0]),LW=Math.hypot(...W);
+const rot=p=>{const c=Math.cos(-ANG),s=Math.sin(-ANG);return[p[0]*c-p[1]*s,p[0]*s+p[1]*c];};
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function drawChain(cs,pr,X0,Y0,S,tag){
+  const pts=cs.map(c=>rot(xy(c))),P=([x,y])=>[X0+x*S,Y0-y*S];
+  ctx.beginPath();pts.forEach((p,i)=>{const[X,Y]=P(p);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.strokeStyle=css("--muted");ctx.lineWidth=1.5;ctx.setLineDash([5,5]);ctx.stroke();ctx.setLineDash([]);
+  const col=new Array(cs.length).fill(null),sh=new Array(cs.length).fill(false);let vi=0;
+  for(const it of pr.list){if(it[0]==="V"){const c=vi++%2?css("--c2"):css("--c0");for(const i of it.slice(1))if(!col[i])col[i]=c;}else if(it[0]==="1")col[it[1]]=css("--c4");else sh[it[1]]=true;}
+  pts.forEach((p,i)=>{const[X,Y]=P(p);ctx.beginPath();ctx.arc(X,Y,S*1.15,0,7);ctx.fillStyle=col[i]||css("--panel");ctx.fill();ctx.lineWidth=sh[i]?8:2;ctx.strokeStyle=sh[i]?css("--ink"):css("--edge");ctx.stroke();});
+  ctx.fillStyle=css("--ink");ctx.font="bold 24px BIZ UDPGothic,sans-serif";ctx.textAlign="left";ctx.fillText(tag,X0,Y0-S*3.2);
+}
+function draw(n){
+  const f=FR[n];ctx.clearRect(0,0,1200,600);
+  const S=1100/((f.a+f.b)/2*LW+4),X0=40;
+  const A=zig(f.a,false),pa=parts(A),J=join(f.a,f.b),Bc=zig(f.b,J.mirror),pb=parts(Bc),ps=parts(J.cs);
+  if(f.s<2){drawChain(A,pa,X0,170,S,"a = "+f.a);
+    const shift=f.s===1?rot(xy(J.off))[0]*S:0;
+    drawChain(Bc,pb,X0+shift,f.s===1?390:430,S,"b = "+f.b+(J.mirror?"（鏡の鎖）":""));}
+  else drawChain(J.cs,ps,X0,320,S,"a + b = "+(f.a+f.b));
+  document.getElementById("sum").textContent=f.a+" + "+f.b+" = "+(f.a+f.b);
+  document.getElementById("pa").textContent=fmt(pa);document.getElementById("pb").textContent=fmt(pb);
+  document.getElementById("ps").textContent=f.s===2?fmt(ps):"—";
+  const c=ps.k-pa.k-pb.k;document.getElementById("carry").textContent=f.s===2?(c>0?"+":"")+c:"—";
+}
+let n=0,playing=true,acc=0,prev=0;
+const speed=document.getElementById("speed"),btn=document.getElementById("play");
+function adv(){n=(n+1)%FR.length;draw(n);}
+function loop(t){if(playing){acc+=(t-prev)*speed.value;if(acc>4200){acc=0;adv();}}prev=t;requestAnimationFrame(loop);}
+btn.onclick=()=>{playing=!playing;btn.textContent=playing?"停止":"再生";};
+document.getElementById("step").onclick=()=>{playing=false;btn.textContent="再生";adv();};
+document.getElementById("reset").onclick=()=>{n=0;draw(n);};
+draw(n);requestAnimationFrame(t=>{prev=t;loop(t);});
+</script>
+</body>
+</html>
