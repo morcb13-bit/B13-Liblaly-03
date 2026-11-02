@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>鎖を真横から見る</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 単位の鎖を真横から見る。奇数はcos波の山と谷を結ぶジグザグ、偶数は二つの波が触れ合う軸の上。部品は V（3）・1・2 */
+:root{
+  --bg:#efede6; --panel:#f8f7f2; --ink:#1e2724; --muted:#5d6660; --rule:#cfcabd;
+  --c0:#e0b030; --c1:#1f5fa8; --c2:#b0452a; --c3:#3d7d4f; --c4:#ffffff; --edge:#39443f; --hl:#1e2724; --wa:#1f5fa8; --wb:#3d7d4f;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;padding-block:16px 28px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0}
+canvas{width:100%;max-width:720px;aspect-ratio:2/1;height:auto;justify-self:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.kv b{font-family:var(--mono);font-weight:600;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+label{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.35rem,4vw,1.8rem);margin:0;letter-spacing:.02em}
+p{margin:0;line-height:1.75;color:var(--ink)}
+.note{font-size:.85rem;color:var(--muted);line-height:1.65}
+code{font-family:var(--mono);font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>鎖を真横から見る</h1>
+  <div class="box">
+    <canvas id="cv" width="1200" height="600" aria-label="単位の鎖を真横から見た図"></canvas>
+    <div class="controls">
+      <button id="play">停止</button>
+      <button id="step">一歩</button>
+      <button id="reset">はじめから</button>
+      <label>速さ <input id="speed" type="range" min="1" max="8" value="3"></label>
+    </div>
+    <div class="kv">
+      <div><span>n</span><b id="n">1</b></div>
+      <div><span>部品</span><b id="parts">1</b></div>
+      <div><span>3の桁</span><b id="digit">+1</b></div>
+      <div><span>2で割った余り・6で割った余り</span><b id="mod">1・1</b></div>
+      <div><span>素数か</span><b id="prime">—</b></div>
+    </div>
+  </div>
+  <p>円環 n 個を一列につないだ単位の鎖を、二歩分の向き w を横軸にして真横から見ます。n が奇数の鎖は連続のつなぎ方だけで、どこも 108° に折れ、偶数番目の環は軸の上、奇数番目の環は軸の片側に並びます。鏡に写した鎖は反対側に出ます。二つの奇数の鎖は、それぞれの中心線から見ると山と谷が入れ替わった cos 波（青と緑）で、軸の上で触れ合います。</p>
+  <p>n が偶数の鎖は 2つ飛ばしと連続を交互にし、どこも 180° で、すべての環が軸の上に並びます。二歩進むと奇数の鎖と同じ点 w に着くので、偶数の鎖は二つの波が触れ合う点の列をまっすぐ進みます。</p>
+  <p>部品の色は、V字の 3（黄と赤を交互）、余った 1（白）、2つ飛ばしでつながる 2（青）です。奇数は 3 で割った余りに合わせて、V字だけ（桁 0）、真ん中に 1 を置く（桁 +1）、真ん中で V字を1環重ねる（桁 −1）のどれかになります。偶数は 2 だけです。5 以上の素数は奇数で桁が 0 にならない、つまり 6 で割って 1 か 5 余る数で、図ではいつも真ん中に白い 1 か重なった環が立ちます。</p>
+  <p class="note">鎖の位置・部品の分け方・素数かどうかは整数だけで決めています。cos 波の形と、横軸に回して描く座標だけ、観察者側の表示として実数を使っています。</p>
+</div>
+<script>
+// ── 整数の部分 ──
+const CA=[4,-1,2,-3],CB=[1,2,2,1],SAX=[2,0,2,-1],CAX=[3,1,2,-1];
+const add=(a,b)=>a.map((x,i)=>x+b[i]);
+function unit(n){const cs=[[0,0,0,0]],v=n%2?[CA,CB]:[SAX,CAX];for(let i=0;i<n-1;i++)cs.push(add(cs[i],v[i%2]));return cs;}
+function parts(n){ // 部品：[種類, 環の番号の並び]、桁
+  if(n%2===0){const p=[];for(let i=0;i<n;i+=2)p.push(["2",[i,i+1]]);return[p,null];}
+  let d=0,k=0;for(const t of [0,1,-1])if((n-t)%3===0){d=t;k=(n-t)/3;break;}
+  const V=s=>["V",[s,s+1,s+2]];
+  if(d===0)return[[...Array(k)].map((_,i)=>V(3*i)),0];
+  const h=k/2,left=[...Array(h)].map((_,i)=>V(3*i));
+  if(d===1){const c=3*h;return[[...left,["1",[c]],...[...Array(h)].map((_,i)=>V(c+1+3*i))],1];}
+  const c=3*h-1;return[[...left,...[...Array(h)].map((_,i)=>V(c+3*i))],-1];
+}
+const isPrime=n=>{if(n<2)return false;for(let p=2;p*p<=n;p++)if(n%p===0)return false;return true;};
+// ── 観察者側の表示 ──
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+const Z=[...Array(4)].map((_,k)=>[Math.cos(Math.PI*k/5),Math.sin(Math.PI*k/5)]);
+const xy=a=>[a[0]+a[1]*Z[1][0]+a[2]*Z[2][0]+a[3]*Z[3][0],a[1]*Z[1][1]+a[2]*Z[2][1]+a[3]*Z[3][1]];
+const W=xy(add(CA,CB)),ANG=Math.atan2(W[1],W[0]),LW=Math.hypot(...W);
+const rot=p=>{const c=Math.cos(-ANG),s=Math.sin(-ANG);return[p[0]*c-p[1]*s,p[0]*s+p[1]*c];};
+const H=rot(xy(CA))[1]; // 奇数番目の環の高さ（負）
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+function draw(n){
+  ctx.clearRect(0,0,1200,600);
+  const S=1100/(7*LW+2),X0=50,Y0=300,P=([x,y])=>[X0+x*S,Y0-y*S];
+  ctx.strokeStyle=css("--rule");ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(20,Y0);ctx.lineTo(1180,Y0);ctx.stroke();
+  for(const[sg,col] of [[1,"--wa"],[-1,"--wb"]]){ctx.beginPath();for(let i=0;i<=700;i++){const x=i/700*Math.max(1,Math.ceil((n-1)/2))*LW,y=sg*(H/2)*(1-Math.cos(2*Math.PI*x/LW));const[X,Y]=P([x,y]);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}
+    ctx.strokeStyle=css(col);ctx.lineWidth=5;ctx.globalAlpha=0.85;ctx.stroke();ctx.globalAlpha=1;}
+  const pts=unit(n).map(c=>rot(xy(c)));
+  ctx.beginPath();pts.forEach((p,i)=>{const[X,Y]=P(p);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.strokeStyle=css("--muted");ctx.lineWidth=1.5;ctx.setLineDash([6,6]);ctx.stroke();ctx.setLineDash([]);
+  const[ps,d]=parts(n);const col=new Array(n).fill(null),cnt=new Array(n).fill(0);let vi=0;
+  for(const[t,ix] of ps){const c=t==="V"?(vi++%2?css("--c2"):css("--c0")):t==="1"?css("--c4"):css("--c1");for(const i of ix){cnt[i]++;if(!col[i])col[i]=c;}}
+  pts.forEach((p,i)=>{const[X,Y]=P(p);ctx.beginPath();ctx.arc(X,Y,S*1.2,0,7);ctx.fillStyle=col[i];ctx.fill();ctx.lineWidth=cnt[i]>1?7:2.5;ctx.strokeStyle=css("--edge");ctx.stroke();
+    ctx.fillStyle=css("--ink");ctx.font="bold 20px IBM Plex Mono,monospace";ctx.textAlign="center";ctx.fillText(i+1,X,Y+7);});
+  document.getElementById("n").textContent=n;
+  document.getElementById("parts").textContent=ps.map(p=>p[0]).join(" ")+(d===-1?"（真ん中で1環重ねる）":"");
+  document.getElementById("digit").textContent=d===null?"—（偶数）":(d>0?"+":"")+d;
+  document.getElementById("mod").textContent=(n%2)+"・"+(n%6);
+  document.getElementById("prime").textContent=isPrime(n)?"素数":"—";
+}
+let n=1,playing=true,acc=0,prev=0;
+const speed=document.getElementById("speed"),btn=document.getElementById("play");
+function adv(){n=n>=13?1:n+1;draw(n);}
+function loop(t){if(playing){acc+=(t-prev)*speed.value;if(acc>3600){acc=0;adv();}}prev=t;requestAnimationFrame(loop);}
+btn.onclick=()=>{playing=!playing;btn.textContent=playing?"停止":"再生";};
+document.getElementById("step").onclick=()=>{playing=false;btn.textContent="再生";adv();};
+document.getElementById("reset").onclick=()=>{n=1;draw(n);};
+draw(n);requestAnimationFrame(t=>{prev=t;loop(t);});
+</script>
+</body>
+</html>

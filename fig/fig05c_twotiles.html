@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>二つの大きさの同じ模様</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 60環の小さな模様と、円環の中心を結んだ大きな模様（φ³倍）を重ねる。大きな五角形の重心は五芒星に一致する */
+:root{
+  --bg:#efede6; --panel:#f8f7f2; --ink:#1e2724; --muted:#5d6660; --rule:#cfcabd;
+  --c0:#e0b030; --c1:#1f5fa8; --c2:#b0452a; --c3:#3d7d4f; --c4:#6a4e9b; --edge:#39443f; --hl:#1e2724; --big:#1e2724;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b;
+  --c4:#d9d6cc; --edge:#0d110f; --hl:#f0c53a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;padding-block:16px 28px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0}
+canvas{width:100%;max-width:560px;aspect-ratio:1/1;height:auto;justify-self:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.kv b{font-family:var(--mono);font-weight:600;font-size:1.1rem;font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+label{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.35rem,4vw,1.8rem);margin:0;letter-spacing:.02em}
+p{margin:0;line-height:1.75;color:var(--ink)}
+.note{font-size:.85rem;color:var(--muted);line-height:1.65}
+code{font-family:var(--mono);font-size:.9em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>二つの大きさの同じ模様</h1>
+  <div class="box">
+    <canvas id="cv" width="1000" height="1000" aria-label="小さな模様と大きな模様を重ねた図"></canvas>
+    <div class="controls">
+      <button id="play">停止</button>
+      <button id="step">一歩</button>
+      <button id="reset">はじめから</button>
+      <label>速さ <input id="speed" type="range" min="1" max="8" value="3"></label>
+    </div>
+    <div class="kv">
+      <div><span>段階</span><b id="stage">—</b></div>
+      <div><span>大きな正五角形</span><b id="np">—</b></div>
+      <div><span>大きなひし形</span><b id="nr">—</b></div>
+      <div><span>重心が五芒星に重なる</span><b id="hit">—</b></div>
+    </div>
+  </div>
+  <p>はじめは第2章の 60 環です。五角形 420 枚を 5 色で塗り、真ん中と外側の五芒星 21 個を黒で示します。次に、円環の中心 60 個を点にし、連続のつなぎ方でつながる中心どうしを線で結びます。</p>
+  <p>結んだ線は、正五角形 21 個とひし形 10 個だけで平面を区切ります。大きな正五角形の重心は、21 個すべてが小さな模様の五芒星の位置にちょうど重なります。大きな模様の辺は、小さな五角形の辺のちょうど φ³ 倍です。同じ模様が、φ³ 倍の大きさでもう一度現れています。</p>
+  <p>この「どこまで行っても同じ並びは繰り返さないのに、φ 倍の大きさで同じ模様が重なる」平面の敷き方には、名前があります。ペンローズタイリングです。</p>
+  <p class="note">円環の中心・網の面・重心の一致は整数だけで決めています（面は本文の検算スクリプトが出したものを使い、重心の一致は図の中で 5 倍した整数4成分で確かめています）。画面の座標に直す最後の一回だけ、観察者側の表示として実数を使っています。</p>
+</div>
+<script>
+const DATA={"rings":[[3,0,2,-2],[0,2,1,2],[-3,1,-1,3],[-2,-1,-2,0],[2,-2,0,-3],[7,-1,4,-5],[6,1,4,-3],[1,4,3,3],[-1,4,2,5],[-6,3,-2,7],[-7,2,-3,6],[-5,-2,-4,1],[-3,-3,-4,-1],[3,-4,-1,-6],[5,-4,1,-7],[5,3,5,0],[-5,5,0,8],[-8,0,-5,5],[0,-5,-3,-5],[8,-3,3,-8],[10,0,6,-6],[0,6,4,6],[-10,4,-4,10],[-6,-4,-6,0],[6,-6,0,-10],[13,-2,7,-10],[12,-4,5,-11],[11,2,8,-5],[8,4,7,-1],[6,5,7,1],[3,7,6,5],[-3,8,3,10],[-6,7,1,11],[-8,7,-1,12],[-11,6,-3,13],[-13,3,-6,11],[-12,1,-7,8],[-11,-1,-7,6],[-10,-3,-8,3],[-5,-6,-7,-3],[-1,-7,-5,-6],[1,-7,-4,-8],[5,-8,-2,-11],[11,-5,4,-12],[10,-7,2,-13],[15,1,10,-8],[16,-1,9,-11],[2,9,7,8],[-2,10,5,11],[-15,7,-5,16],[-16,5,-7,15],[-11,-5,-10,2],[-8,-7,-9,-2],[8,-10,-1,-15],[11,-9,1,-16],[15,-6,6,-15],[9,6,9,0],[-9,9,0,15],[-15,0,-9,9],[0,-9,-6,-9]],"faces":[[[3,0,2,-2],[7,-1,4,-5],[10,0,6,-6],[6,1,4,-3]],[[0,2,1,2],[1,4,3,3],[0,6,4,6],[-1,4,2,5]],[[-3,1,-1,3],[-6,3,-2,7],[-10,4,-4,10],[-7,2,-3,6]],[[-2,-1,-2,0],[-5,-2,-4,1],[-6,-4,-6,0],[-3,-3,-4,-1]],[[2,-2,0,-3],[3,-4,-1,-6],[6,-6,0,-10],[5,-4,1,-7]],[[5,3,5,0],[8,4,7,-1],[9,6,9,0],[6,5,7,1]],[[-5,5,0,8],[-6,7,1,11],[-9,9,0,15],[-8,7,-1,12]],[[-8,0,-5,5],[-12,1,-7,8],[-15,0,-9,9],[-11,-1,-7,6]],[[0,-5,-3,-5],[-1,-7,-5,-6],[0,-9,-6,-9],[1,-7,-4,-8]],[[8,-3,3,-8],[11,-5,4,-12],[15,-6,6,-15],[12,-4,5,-11]],[[3,0,2,-2],[6,1,4,-3],[5,3,5,0],[1,4,3,3],[0,2,1,2]],[[3,0,2,-2],[0,2,1,2],[-3,1,-1,3],[-2,-1,-2,0],[2,-2,0,-3]],[[3,0,2,-2],[2,-2,0,-3],[5,-4,1,-7],[8,-3,3,-8],[7,-1,4,-5]],[[0,2,1,2],[-1,4,2,5],[-5,5,0,8],[-6,3,-2,7],[-3,1,-1,3]],[[-3,1,-1,3],[-7,2,-3,6],[-8,0,-5,5],[-5,-2,-4,1],[-2,-1,-2,0]],[[-2,-1,-2,0],[-3,-3,-4,-1],[0,-5,-3,-5],[3,-4,-1,-6],[2,-2,0,-3]],[[7,-1,4,-5],[8,-3,3,-8],[12,-4,5,-11],[13,-2,7,-10],[10,0,6,-6]],[[6,1,4,-3],[10,0,6,-6],[11,2,8,-5],[8,4,7,-1],[5,3,5,0]],[[1,4,3,3],[5,3,5,0],[6,5,7,1],[3,7,6,5],[0,6,4,6]],[[-1,4,2,5],[0,6,4,6],[-3,8,3,10],[-6,7,1,11],[-5,5,0,8]],[[-6,3,-2,7],[-5,5,0,8],[-8,7,-1,12],[-11,6,-3,13],[-10,4,-4,10]],[[-7,2,-3,6],[-10,4,-4,10],[-13,3,-6,11],[-12,1,-7,8],[-8,0,-5,5]],[[-5,-2,-4,1],[-8,0,-5,5],[-11,-1,-7,6],[-10,-3,-8,3],[-6,-4,-6,0]],[[-3,-3,-4,-1],[-6,-4,-6,0],[-5,-6,-7,-3],[-1,-7,-5,-6],[0,-5,-3,-5]],[[3,-4,-1,-6],[0,-5,-3,-5],[1,-7,-4,-8],[5,-8,-2,-11],[6,-6,0,-10]],[[5,-4,1,-7],[6,-6,0,-10],[10,-7,2,-13],[11,-5,4,-12],[8,-3,3,-8]],[[10,0,6,-6],[13,-2,7,-10],[16,-1,9,-11],[15,1,10,-8],[11,2,8,-5]],[[0,6,4,6],[3,7,6,5],[2,9,7,8],[-2,10,5,11],[-3,8,3,10]],[[-10,4,-4,10],[-11,6,-3,13],[-15,7,-5,16],[-16,5,-7,15],[-13,3,-6,11]],[[-6,-4,-6,0],[-10,-3,-8,3],[-11,-5,-10,2],[-8,-7,-9,-2],[-5,-6,-7,-3]],[[6,-6,0,-10],[5,-8,-2,-11],[8,-10,-1,-15],[11,-9,1,-16],[10,-7,2,-13]]]};
+const add=(a,b)=>a.map((x,i)=>x+b[i]),sub=(a,b)=>a.map((x,i)=>x-b[i]),key=a=>a.join(",");
+function turn(a,k){let v=a.slice();k=((k%10)+10)%10;for(let i=0;i<k;i++){const[c0,c1,c2,c3]=v;v=[-c3,c0+c3,c1-c3,c2+c3];}return v;}
+const PHI=[1,0,1,-1],PHI2=[2,0,1,-1];
+const cells=new Map();for(const c of DATA.rings)for(let k=0;k<10;k++){const p=add(c,turn(PHI2,k));if(!cells.has(key(p)))cells.set(key(p),{p,a:k});}
+const stars=new Map();for(const v of cells.values())for(let j=0;j<10;j++){const g=sub(v.p,turn(PHI,j)),kg=key(g);if(cells.has(kg)||stars.has(kg))continue;
+  let ok=true;for(let i=0;i<5;i++)if(!cells.has(key(add(g,turn(PHI,j%2+2*i))))){ok=false;break;}if(ok)stars.set(kg,{g,k:j%2});}
+const pents=DATA.faces.filter(f=>f.length===5),rhs=DATA.faces.filter(f=>f.length===4);
+const S5=new Set([...stars.values()].map(s=>key(s.g.map(x=>5*x))));
+const hits=pents.filter(f=>S5.has(key(f.reduce((s,p)=>add(s,p),[0,0,0,0])))).length;
+// ── 観察者側の表示 ──
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+const Z=[...Array(10)].map((_,k)=>[Math.cos(Math.PI*k/5),Math.sin(Math.PI*k/5)]);
+const xy=a=>[a[0]+a[1]*Z[1][0]+a[2]*Z[2][0]+a[3]*Z[3][0],a[1]*Z[1][1]+a[2]*Z[2][1]+a[3]*Z[3][1]];
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const W=1000,SC=W/50,P=a=>{const[x,y]=xy(a);return[W/2+x*SC,W/2-y*SC];};
+const PH=(1+Math.sqrt(5))/2;
+const ST=["小さな模様（60環）","五芒星を黒で","円環の中心を点に","中心を連続で結ぶ","正五角形とひし形","重心が五芒星に重なる"];
+function draw(n){
+  ctx.clearRect(0,0,W,W);const fade=n>=3?0.35:1;
+  for(const v of cells.values()){const c=xy(v.p);ctx.beginPath();for(let i=0;i<5;i++){const z=Z[(v.a+2*i)%10];const X=W/2+(c[0]+z[0])*SC,Y=W/2-(c[1]+z[1])*SC;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}ctx.closePath();
+    ctx.globalAlpha=fade;ctx.fillStyle=css("--c"+(v.a%5));ctx.fill();ctx.lineWidth=1;ctx.strokeStyle=css("--edge");ctx.stroke();ctx.globalAlpha=1;}
+  if(n>=1)for(const s of stars.values()){const c=xy(s.g);ctx.beginPath();for(let i=0;i<10;i++){const r=i%2?PH*0.98:1/PH,z=Z[(s.k+i)%10];const X=W/2+(c[0]+r*z[0])*SC,Y=W/2-(c[1]+r*z[1])*SC;i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);}ctx.closePath();ctx.fillStyle=css("--big");ctx.globalAlpha=n>=3?0.6:1;ctx.fill();ctx.globalAlpha=1;}
+  if(n>=4){for(const f of pents){ctx.beginPath();f.forEach((p,i)=>{const[X,Y]=P(p);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.closePath();ctx.fillStyle=css("--c0");ctx.globalAlpha=0.28;ctx.fill();ctx.globalAlpha=1;}
+    for(const f of rhs){ctx.beginPath();f.forEach((p,i)=>{const[X,Y]=P(p);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.closePath();ctx.fillStyle=css("--c1");ctx.globalAlpha=0.3;ctx.fill();ctx.globalAlpha=1;}}
+  if(n>=3)for(const f of DATA.faces){ctx.beginPath();f.forEach((p,i)=>{const[X,Y]=P(p);i?ctx.lineTo(X,Y):ctx.moveTo(X,Y);});ctx.closePath();ctx.lineWidth=4;ctx.strokeStyle=css("--big");ctx.stroke();}
+  if(n>=2)for(const r of DATA.rings){const[X,Y]=P(r);ctx.beginPath();ctx.arc(X,Y,7,0,7);ctx.fillStyle=css("--big");ctx.fill();}
+  if(n>=5)for(const f of pents){const s=f.reduce((t,p)=>add(t,p),[0,0,0,0]);if(!S5.has(key(s)))continue;const[X,Y]=P(s.map(x=>x/5));ctx.beginPath();ctx.arc(X,Y,16,0,7);ctx.lineWidth=5;ctx.strokeStyle=css("--c2");ctx.stroke();}
+  document.getElementById("stage").textContent=ST[n];
+  document.getElementById("np").textContent=n>=4?pents.length:"—";
+  document.getElementById("nr").textContent=n>=4?rhs.length:"—";
+  document.getElementById("hit").textContent=n>=5?hits+" / "+pents.length:"—";
+}
+let n=0,playing=true,acc=0,prev=0;
+const speed=document.getElementById("speed"),btn=document.getElementById("play");
+function adv(){n=(n+1)%ST.length;draw(n);}
+function loop(t){if(playing){acc+=(t-prev)*speed.value;if(acc>4500){acc=0;adv();}}prev=t;requestAnimationFrame(loop);}
+btn.onclick=()=>{playing=!playing;btn.textContent=playing?"停止":"再生";};
+document.getElementById("step").onclick=()=>{playing=false;btn.textContent="再生";adv();};
+document.getElementById("reset").onclick=()=>{n=0;draw(n);};
+draw(n);requestAnimationFrame(t=>{prev=t;loop(t);});
+</script>
+</body>
+</html>
