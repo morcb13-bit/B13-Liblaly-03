@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>円環を傾けて見る</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Shippori+Mincho+B1:wght@600;800&family=BIZ+UDPGothic:wght@400;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* 五角形10枚の円環を傾けて見ると、黄金のひし形30面体10個が上下2段のジグザグに組んだ立体の、真ん中の切り口だった */
+:root{
+  --bg:#efede6; --panel:#f8f7f2; --ink:#1e2724; --muted:#5d6660; --rule:#cfcabd;
+  --c0:#e0b030; --c1:#1f5fa8; --c2:#b0452a; --c3:#3d7d4f; --c4:#ffffff; --edge:#39443f; --shadow:#c9c4b6;
+  --display:"Shippori Mincho B1","Hiragino Mincho ProN","Yu Mincho",serif;
+  --body:"BIZ UDPGothic","Hiragino Sans","Yu Gothic",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b; --c4:#d9d6cc; --edge:#0d110f; --shadow:#2c3430; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#151a18; --panel:#1d2421; --ink:#e6ebe7; --muted:#9aa6a0; --rule:#36403b; --c4:#d9d6cc; --edge:#0d110f; --shadow:#2c3430; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);margin:0;padding-inline:16px;padding-block:16px 28px}
+.wrap{max-width:760px;margin:0 auto;display:grid;gap:14px}
+.box{background:var(--panel);border:1px solid var(--rule);border-radius:10px;padding:12px;display:grid;gap:10px;min-width:0}
+canvas{width:100%;max-width:560px;aspect-ratio:1/1;height:auto;justify-self:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px 14px}
+.kv div{display:grid;gap:2px}
+.kv span{font-size:.78rem;color:var(--muted);letter-spacing:.06em}
+.kv b{font-family:var(--mono);font-weight:600;font-size:1.05rem;font-variant-numeric:tabular-nums}
+.controls{display:flex;flex-wrap:wrap;gap:6px;align-items:center}
+button{font:inherit;font-weight:700;color:var(--ink);background:var(--panel);border:1px solid var(--rule);border-radius:8px;padding:7px 12px;cursor:pointer}
+button:hover{border-color:var(--muted)}
+button:focus-visible{outline:2px solid var(--c1);outline-offset:2px}
+label{font-size:.85rem;color:var(--muted);display:flex;gap:6px;align-items:center}
+h1{font-family:var(--display);font-weight:800;font-size:clamp(1.35rem,4vw,1.8rem);margin:0;letter-spacing:.02em}
+p{margin:0;line-height:1.75}
+.note{font-size:.85rem;color:var(--muted);line-height:1.65}
+.sw{display:inline-block;width:.9em;height:.9em;border-radius:2px;vertical-align:-.1em;margin-right:.25em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>円環を傾けて見る</h1>
+  <div class="box">
+    <canvas id="cv" width="1000" height="1000" aria-label="五角形10枚の円環を傾けていくと、黄金のひし形30面体10個が上下2段のジグザグに組んだ立体の、真ん中の切り口だったことが見える図"></canvas>
+    <div class="controls">
+      <button id="play">停止</button>
+      <button id="reset">はじめから</button>
+      <label>速さ <input id="speed" type="range" min="1" max="8" value="4"></label>
+    </div>
+    <div class="kv"><div><span>段階</span><b id="ph">—</b></div><div><span>仰角</span><b id="el">—</b></div></div>
+  </div>
+  <p>はじめは、この本の最初の円環（五角形 10 枚。色は序章の図と同じく、番地 k を 5 で割った余りで決めています）を真上から見たところです。そこに黄金のひし形 30 面体を 10 個重ねて、見る角度を傾けていきます。</p>
+  <p>30 面体は<span class="sw" style="background:#d6c4b0"></span>上の段 5 個と<span class="sw" style="background:#b0c0d0"></span>下の段 5 個で、面と面を合わせて交互につながったジグザグの輪です。二つの段のちょうど真ん中の平面が、30 面体を一つずつ切っています。上の段の 30 面体は、下の五つ角の頂点のまわりの 5 頂点で切られ、下の段の 30 面体は、上の五つ角の頂点のまわりの 5 頂点で切られます。切り口はどれも五角形で、10 枚は同じ平面に並び、隣どうしが辺をぴったり共有して、最初の円環になります。真横から見たあと真上に戻すと、立体は平らな円環に戻ります。</p>
+  <p class="note">立体の並べ方は、黄金のひし形 30 面体を面で接して輪にしたもの（Kabai と Bérczi の 2009 年の図にある輪）にならっています。底の淡い五角形は、円環を真下に落とした影です。30 面体の色・陰影・回し方は、画面に描くための観察者側の表示です。</p>
+</div>
+<script>
+const D={"V":[[-1.44721,0.0,-0.72361],[-1.44721,0.0,0.27639],[-1.17082,-0.85065,-0.27639],[-1.17082,-0.85065,0.72361],[-1.17082,0.85065,-0.27639],[-1.17082,0.85065,0.72361],[-0.89443,0.0,1.17082],[-0.72361,-0.52573,-1.17082],[-0.72361,0.52573,-1.17082],[-0.44721,-1.37638,-0.72361],[-0.44721,-1.37638,0.27639],[-0.44721,1.37638,-0.72361],[-0.44721,1.37638,0.27639],[-0.27639,-0.85065,1.17082],[-0.27639,0.85065,1.17082],[0.0,-0.0,-1.61803],[0.0,0.0,1.61803],[0.27639,-0.85065,-1.17082],[0.27639,0.85065,-1.17082],[0.44721,-1.37638,-0.27639],[0.44721,-1.37638,0.72361],[0.44721,1.37638,-0.27639],[0.44721,1.37638,0.72361],[0.72361,-0.52573,1.17082],[0.72361,0.52573,1.17082],[0.89443,-0.0,-1.17082],[1.17082,-0.85065,-0.72361],[1.17082,-0.85065,0.27639],[1.17082,0.85065,-0.72361],[1.17082,0.85065,0.27639],[1.44721,-0.0,-0.27639],[1.44721,-0.0,0.72361]],"F":[[22,12,11,21],[20,10,9,19],[5,1,0,4],[31,27,26,30],[3,10,9,2],[22,29,28,21],[20,27,26,19],[5,12,11,4],[31,29,28,30],[3,1,0,2],[16,13,3,6],[28,25,15,18],[13,20,10,3],[21,28,18,11],[19,26,17,9],[14,22,12,5],[26,25,15,17],[16,14,5,6],[16,23,20,13],[11,18,15,8],[23,31,27,20],[4,11,8,0],[30,28,25,26],[6,5,1,3],[16,24,31,23],[0,8,15,7],[24,22,29,31],[2,0,7,9],[16,14,22,24],[9,7,15,17]],"C":[[2.34164,0.0,1.17082],[1.89443,1.37638,-1.17082],[0.72361,2.22703,1.17082],[-0.72361,2.22703,-1.17082],[-1.89443,1.37638,1.17082],[-2.34164,0.0,-1.17082],[-1.89443,-1.37638,1.17082],[-0.72361,-2.22703,-1.17082],[0.72361,-2.22703,1.17082],[1.89443,-1.37638,-1.17082]],"PT":[13,23,24,14,6],"PB":[7,17,25,18,8]};
+const cv=document.getElementById("cv"),ctx=cv.getContext("2d");
+const css=n=>getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const ZG=-3.3, S=112;
+// 段階：[秒, 名前]
+const PH=[[3,"真上から：五角形 10 枚の円環"],[3,"30 面体を重ねる"],[5,"傾ける"],[8,"回して見る"],[3,"真横から：上下 2 段"],[4,"真上に戻す"],[2,"円環は立体の切り口"]];
+const TOT=PH.reduce((s,p)=>s+p[0],0);
+const sm=x=>x*x*(3-2*x);
+function state(t){let i=0;while(i<PH.length-1&&t>=PH[i][0]){t-=PH[i][0];i++;}const u=Math.min(1,t/PH[i][0]);
+  let el=90,az=0,fade=0;const E1=24;
+  if(i===0){fade=0;}
+  if(i===1){fade=sm(u);}
+  if(i>=2)fade=1;
+  if(i===2){el=90-(90-E1)*sm(u);az=-40*sm(u);}
+  if(i===3){el=E1;az=-40-360*u;}
+  if(i===4){el=E1*(1-sm(Math.min(1,u*2)));az=-400-30*sm(u);}
+  if(i===5){el=90*sm(u);az=-430+70*sm(u);fade=1-0.6*sm(u);}
+  if(i===6){el=90;az=-360;fade=0.4*(1-sm(u));}
+  return{i,el,az,fade};}
+function view(el,az){const a=az*Math.PI/180,e=el*Math.PI/180,ca=Math.cos(a),sa=Math.sin(a),ce=Math.cos(e),se=Math.sin(e);
+  return p=>{const X=p[0]*ca-p[1]*sa,Y=p[0]*sa+p[1]*ca,z=p[2];return[X,Y*se+z*ce,-Y*ce+z*se];};}
+const add=(a,b)=>[a[0]+b[0],a[1]+b[1],a[2]+b[2]];
+const sub=(a,b)=>[a[0]-b[0],a[1]-b[1],a[2]-b[2]];
+const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+const scr=q=>[500+S*q[0],520-S*q[1]];
+const UP=[[214,196,176],[176,192,208]];
+function poly(pts){ctx.beginPath();ctx.moveTo(...pts[0]);for(let i=1;i<pts.length;i++)ctx.lineTo(...pts[i]);ctx.closePath();}
+function draw(t){
+  const s=state(t),V=view(s.el,s.az);
+  ctx.fillStyle=css("--panel");ctx.fillRect(0,0,1000,1000);
+  const edge=css("--edge");
+  // 底の影
+  if(s.el<89.5){ctx.globalAlpha=Math.min(1,(90-s.el)/30)*0.9;
+    D.C.forEach((c,k)=>{const P=c[2]>0?D.PB:D.PT;const q=P.map(i=>scr(V([c[0]+D.V[i][0],c[1]+D.V[i][1],ZG])));poly(q);ctx.fillStyle=css("--shadow");ctx.fill();});
+    ctx.globalAlpha=1;}
+  // 面を集めて奥から描く
+  const items=[];
+  const pz=[];
+  D.C.forEach((c,k)=>{const lay=c[2]>0?0:1;pz[k]=-1e9;
+    for(const f of D.F){const w=f.map(i=>V(add(c,D.V[i])));
+      const n=cross(sub(w[1],w[0]),sub(w[2],w[0]));const L=Math.hypot(...n);
+      const cc=V(c),m=[0,1,2].map(j=>(w[0][j]+w[1][j]+w[2][j]+w[3][j])/4);
+      const sg=Math.sign(n[0]*(m[0]-cc[0])+n[1]*(m[1]-cc[1])+n[2]*(m[2]-cc[2]));
+      const nn=n.map(x=>sg*x/L);const facing=nn[2];
+      if(facing<=0)continue;
+      const z=(w[0][2]+w[1][2]+w[2][2]+w[3][2])/4;if(z>pz[k])pz[k]=z;
+      items.push({k,z,w,lay,b:0.55+0.45*Math.max(0,nn[0]*-0.35+nn[1]*0.55+nn[2]*0.76)});}});
+  D.C.forEach((c,k)=>{const P=c[2]>0?D.PB:D.PT;const w=P.map(i=>V(add(c,D.V[i])));items.push({pen:1,k,z:s.fade>0.001?w.reduce((a,p)=>a+p[2],0)/5:-1e9,w});});
+  items.sort((a,b)=>a.z-b.z);
+  for(const it of items){poly(it.w.map(scr));
+    if(it.pen){ctx.fillStyle=css("--c"+(it.k%5));ctx.fill();ctx.lineWidth=2.6;ctx.strokeStyle=edge;ctx.stroke();continue;}
+    if(s.fade<0.001)continue;
+    const c=UP[it.lay].map(x=>Math.round(x*it.b));
+    ctx.globalAlpha=s.fade*0.4;ctx.fillStyle=`rgb(${c})`;ctx.fill();ctx.lineWidth=1.2;ctx.strokeStyle="#3a4440";ctx.stroke();ctx.globalAlpha=1;}
+  document.getElementById("ph").textContent=PH[s.i][1];
+  document.getElementById("el").textContent=Math.round(s.el)+"°";}
+let T=0,playing=true,prev=null;
+function loop(now){if(prev===null)prev=now;const dt=(now-prev)/1000;prev=now;
+  if(playing){T=(T+dt*(+document.getElementById("speed").value)/4)%TOT;draw(T);}requestAnimationFrame(loop);}
+document.getElementById("play").onclick=e=>{playing=!playing;e.target.textContent=playing?"停止":"再生";};
+document.getElementById("reset").onclick=()=>{T=0;draw(T);};
+draw(0);requestAnimationFrame(loop);
+</script>
+</body>
+</html>
